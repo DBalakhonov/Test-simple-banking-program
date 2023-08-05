@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.skypro.simplebanking.controller.UserController;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +19,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.web.JsonPath;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.DirtiesContext.ClassMode;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultMatcher;
 
@@ -33,15 +36,68 @@ public class TestControllers {
     @Autowired
     MockMvc mockMvc;
     @Test
+    @WithMockUser("user")
+    void getAllUsersTest() throws Exception{
+        JSONObject jsonObject = new JSONObject();
+        mockMvc.perform(get("/user/list")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonObject.toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+    @Test
+    @WithMockUser(authorities = {"user:write"})
     void createUserTest() throws Exception {
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("username","test_name");
         jsonObject.put("password","7852");
+
         mockMvc.perform(post("/user")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonObject.toString()))
+                .andExpect(status().isOk());
+    }
+    @Test
+    @WithMockUser("test_name")
+    void getMyProfileTest() throws Exception {
+        JSONObject jsonObject = new JSONObject();
+        mockMvc.perform(get("/user/me")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonObject.toString()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("test_name"))
-                .andExpect(jsonPath("$.password").value("7852"));
+                .andExpect(jsonPath("$.name").value("test_name"));
+    }
+    @Test
+    @WithMockUser("test_name")
+    void transferTest()throws Exception{
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("fromAccountId",1);
+        jsonObject.put("toUserId",3);
+        jsonObject.put("toAccountId",55);
+        jsonObject.put("amount",1);
+        mockMvc.perform(post("/transfer")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonObject.toString()))
+                .andExpect(status().isOk());
+    }
+    @Test
+    @WithMockUser(authorities = {"test_name"})
+    void depositTest() throws Exception{
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("amount",5);
+        mockMvc.perform(post("/account/deposit/2")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonObject.toString()))
+                .andExpect(status().isOk());
+    }
+    @Test
+    @WithMockUser(authorities = {"test_name"})
+    void withdrawTest() throws Exception{
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("amount",1);
+        mockMvc.perform(post("/account/withdraw/2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonObject.toString()))
+                .andExpect(status().isOk());
     }
 }
