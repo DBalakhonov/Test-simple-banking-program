@@ -38,12 +38,20 @@ public class TestControllers {
     @Test
     @WithMockUser("user")
     void getAllUsersTest() throws Exception{
-        JSONObject jsonObject = new JSONObject();
+        JSONObject jsonObject = new JSONObject() ;
         mockMvc.perform(get("/user/list")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(jsonObject.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
+    }
+    @Test
+    @WithMockUser("admin")
+    void getAllUsersTestNegative() throws Exception{
+        mockMvc.perform(get("/user/list")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonObject.toString()))
+                .andExpect(status().isForBidden());
     }
     @Test
     @WithMockUser(authorities = {"user:write"})
@@ -56,6 +64,18 @@ public class TestControllers {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(jsonObject.toString()))
                 .andExpect(status().isOk());
+    }
+    @Test
+    @WithMockUser("user") 
+    void createUserTest() throws Exception {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("username","test_name");
+        jsonObject.put("password","7852");
+
+        mockMvc.perform(post("/user")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(jsonObject.toString()))
+                .andExpect(status().isForBidden());
     }
     @Test
     @WithMockUser("test_name")
@@ -100,4 +120,5 @@ public class TestControllers {
                         .content(jsonObject.toString()))
                 .andExpect(status().isOk());
     }
+    
 }
