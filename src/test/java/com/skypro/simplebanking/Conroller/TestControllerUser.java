@@ -14,6 +14,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
     @SpringBootTest
     @AutoConfigureMockMvc
     @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -24,42 +25,24 @@ import org.springframework.test.web.servlet.MockMvc;
         @Test
         @WithMockUser(username = "user",password = "user")
         void getAllUsersTest() throws Exception {
-            JSONObject jsonObject = new JSONObject();
-            mockMvc.perform(get("/user/list")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(jsonObject.toString()))
+            mockMvc.perform(get("/user/list"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$").isArray());
         }
 
         @Test
-        @WithMockUser(authorities = {"admin:write"})
         void getAllUsersTestNegative() throws Exception {
             mockMvc.perform(get("/user/list")
-                            .contentType(MediaType.APPLICATION_JSON))
+                            .header("X-SECURITY-ADMIN-KEY","admin"))
                     .andExpect(status().isForbidden());
         }
-
-        @Test
-        @WithMockUser(username = "admin",password = "admin")
-        void createUserTest() throws Exception {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("username", "test_name");
-            jsonObject.put("password", "7852");
-
-            mockMvc.perform(post("/user")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(jsonObject.toString()))
-                    .andExpect(status().isOk());
-        }
-
         @Test
         void createUserTestWitchToken() throws Exception {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("username", "test_name");
             jsonObject.put("password", "7852");
             mockMvc.perform(post("/user")
-                            .header("Authorization", "Bearer admin")
+                            .header("X-SECURITY-ADMIN-KEY", "admin")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(jsonObject.toString()))
                     .andExpect(status().isOk());
@@ -79,13 +62,16 @@ import org.springframework.test.web.servlet.MockMvc;
         }
 
         @Test
-        @WithMockUser("test_name")
         void getMyProfileTest() throws Exception {
             JSONObject jsonObject = new JSONObject();
-            mockMvc.perform(get("/user/me")
+            jsonObject.put("username", "test_name");
+            jsonObject.put("password", "$2a$12$xYtql9oLgbaq/FUaYu2uieQqSIp1brc0HKtXvqI2WPQUR77pyTE2q");
+            mockMvc.perform(post("/user")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(jsonObject.toString()))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.name").value("test_name"));
+                            .content(jsonObject.toString())
+                            .header("X-SECURITY-ADMIN-KEY", "admin"))
+                    .andExpect(status().isOk());
+            mockMvc.perform(get("/user/me").with(user("test_name").password("7852")))
+                    .andExpect(status().isOk());
         }
     }

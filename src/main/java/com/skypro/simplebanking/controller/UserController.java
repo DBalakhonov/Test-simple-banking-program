@@ -7,10 +7,12 @@ import com.skypro.simplebanking.dto.UserDTO;
 import javax.validation.Valid;
 
 import com.skypro.simplebanking.service.UserService;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.logging.Logger;
 
 @RestController
 @RequestMapping("/user")
