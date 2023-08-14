@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
@@ -19,6 +20,9 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
     @AutoConfigureMockMvc
     @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
     public class TestControllerUser {
+        @Value("${app.security.admin-token}")
+        private String a;
+
         @Autowired
         MockMvc mockMvc;
 
@@ -33,7 +37,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
         @Test
         void getAllUsersTestNegative() throws Exception {
             mockMvc.perform(get("/user/list")
-                            .header("X-SECURITY-ADMIN-KEY","admin"))
+                            .header("X-SECURITY-ADMIN-KEY",a))
                     .andExpect(status().isForbidden());
         }
         @Test
@@ -42,7 +46,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
             jsonObject.put("username", "test_name");
             jsonObject.put("password", "7852");
             mockMvc.perform(post("/user")
-                            .header("X-SECURITY-ADMIN-KEY", "admin")
+                            .header("X-SECURITY-ADMIN-KEY", a)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(jsonObject.toString()))
                     .andExpect(status().isOk());
