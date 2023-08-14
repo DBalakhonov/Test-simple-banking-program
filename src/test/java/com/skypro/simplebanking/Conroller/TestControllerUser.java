@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.skypro.simplebanking.dto.BankingUserDetails;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +22,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
     @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
     public class TestControllerUser {
         @Value("${app.security.admin-token}")
-        private String a;
+        private String adminToken;
 
         @Autowired
         MockMvc mockMvc;
@@ -37,7 +38,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
         @Test
         void getAllUsersTestNegative() throws Exception {
             mockMvc.perform(get("/user/list")
-                            .header("X-SECURITY-ADMIN-KEY",a))
+                            .header("X-SECURITY-ADMIN-KEY",adminToken))
                     .andExpect(status().isForbidden());
         }
         @Test
@@ -46,7 +47,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
             jsonObject.put("username", "test_name");
             jsonObject.put("password", "7852");
             mockMvc.perform(post("/user")
-                            .header("X-SECURITY-ADMIN-KEY", a)
+                            .header("X-SECURITY-ADMIN-KEY", adminToken)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(jsonObject.toString()))
                     .andExpect(status().isOk());
@@ -55,27 +56,24 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
         @Test
         @WithMockUser(username = "user", password = "user")
         void createUserTestNegative() throws Exception {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("username", "test_name");
-            jsonObject.put("password", "7852");
-
-            mockMvc.perform(post("/user")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(jsonObject.toString()))
+            mockMvc.perform(post("/user"))
                     .andExpect(status().isForbidden());
         }
 
         @Test
         void getMyProfileTest() throws Exception {
-            JSONObject jsonObject = new JSONObject();
-            jsonObject.put("username", "test_name");
-            jsonObject.put("password", "$2a$12$xYtql9oLgbaq/FUaYu2uieQqSIp1brc0HKtXvqI2WPQUR77pyTE2q");
+            JSONObject testUser = new JSONObject();
+            testUser.put("username", "test_name");
+            testUser.put("password", "$2a$12$xYtql9oLgbaq/FUaYu2uieQqSIp1brc0HKtXvqI2WPQUR77pyTE2q");
             mockMvc.perform(post("/user")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content(jsonObject.toString())
-                            .header("X-SECURITY-ADMIN-KEY", "admin"))
+                            .content(testUser.toString())
+                            .header("X-SECURITY-ADMIN-KEY", adminToken))
                     .andExpect(status().isOk());
-            mockMvc.perform(get("/user/me").with(user("test_name").password("7852")))
-                    .andExpect(status().isOk());
+
+            BankingUserDetails bankingUserDetails = new BankingUserDetails(1L, "test_name", "7852", false);
+            mockMvc.perform(get("/user/me").with(user(bankingUserDetails)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.username").value("test_name"));
         }
     }
